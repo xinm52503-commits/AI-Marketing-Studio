@@ -10,8 +10,7 @@ Multi-modal AI marketing content generation workflow based on Coze and Python.
 
 下图展示了整个 Agent 工作流的数据流向、Python 清洗防火墙以及多模态生成节点：
 
-![系统架构图]<img width="1521" height="587" alt="image" src="https://github.com/user-attachments/assets/67329ead-cff1-4fc8-bc02-886863c3eeb2" />
-
+![系统架构图]！<img width="1422" height="276" alt="image" src="https://github.com/user-attachments/assets/2858d7be-6ec5-4bea-99cf-a4f7b409f15e" />
 
 ## 📝 2. 核心 Prompt 模板 (Prompt Engineering)
 
