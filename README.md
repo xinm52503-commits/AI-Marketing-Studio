@@ -9,6 +9,31 @@ Multi-modal AI marketing content generation workflow based on Coze and Python.
 ## 🛠️ 1. 系统架构图 (Architecture Diagram)
 
 下图展示了整个 Agent 工作流的数据流向、Python 清洗防火墙以及多模态生成节点：
+```mermaid
+flowchart TD
+    A[用户输入 Product Brief] --> B[Dify / Coze 工作流引擎]
+    
+    subgraph Core_Agent_Workflow [AI Agent 核心工作流]
+        B --> C[LLM 生成节点\nGPT-4o / Claude]
+        C -- 输出原始文本字符串 --> D[Python 清洗防火墙节点]
+        
+        subgraph Python_Firewall [Python 代码节点安全校验]
+            D1[正则解析匹配 JSON 块] --> D2[语法修复/格式校正]
+            D2 --> D3[Pydantic / 字典结构强校验]
+        end
+        
+        D --> Python_Firewall
+    end
+
+    Python_Firewall -- 抛出 Error / 自动重试 --> C
+    Python_Firewall -- 结构化 JSON 数据 --> E[数据路由分发]
+
+    E -->|Headline & Features| F[营销文案排版组件]
+    E -->|Image Prompt| G[多模态 API 节点\nDALL-E 3 / Flux]
+
+    G --> H[自动化生成产品视觉主图]
+    F --> I[ Streamlit 交互前端 / 终态资产]
+    H --> I
 
 ![系统架构图]！<img width="1422" height="276" alt="image" src="https://github.com/user-attachments/assets/2858d7be-6ec5-4bea-99cf-a4f7b409f15e" />
 
