@@ -1,1562 +1,344 @@
-# cross-border-ai-agent
-Multi-modal AI marketing content generation workflow based on Coze and Python.
-# 🚀 跨境营销多模态内容自动化生成 Agent (Cross-Border Marketing Agent)
+# 跨境电商商品图片与视频生成工具（暂定）
 
-> 本项目基于 **Dify / Coze** 搭建，结合 **Python 清洗节点** 与 **DALL-E 3 / Flux**，实现了从产品 Brief 到英文营销文案与视觉主图的端到端自动化生成。
+## 1. 产品概述
 
----
+### 1.1 一句话定位
 
-## 🛠️ 1. 系统架构图 (Architecture Diagram)
+【本次更新】这是一个给跨境电商卖家使用的内部 Web 工具。卖家在创建任务时先明确目标产品及其品类，再上传该产品的图片与真实参数，并选择生成营销图片、英文商品视频或两者。系统根据目标产品寻找同类视觉参考、提炼适合该产品的卖点并生成相应内容。卖家最终审核通过后，可以独立选择向亚马逊美国站指定 ASIN 上传图片、视频或两者。
 
-下图展示了整个 Agent 工作流的数据流向、Python 清洗防火墙以及多模态生成节点：
+### 1.2 核心价值
+
+- 缩短查找视觉参考、写卖点、做图片和剪视频的时间。
+- 用结构化商品参数约束生成内容，减少虚假或错误宣传。
+- 先审预览、再生成视频，降低昂贵的视频返工。
+- 对最终审核、提交和重试建立完整记录，避免误传和重复上传。
+
+### 1.3 产品形态
+
+- **当前选型**：桌面端 Web App。
+- **选择理由**：图片、参数、脚本和视频需要在同一工作台中对照审核；内部使用无需应用商店分发。
+- **阶段策略**：【本次更新】先支持内部单账号、单商品任务，但不预先固定商品品类。每次任务由卖家明确目标产品；验证流程稳定后再扩展账号和平台。
+
+### 1.4 业务目标与初始指标
+
+- 完整素材提交后，目标 1 分钟内给出卖点和脚本草稿。
+- 目标 5 分钟内给出第一条可审核视频；该时间不包含人工审核及亚马逊处理时间，正式承诺需用真实服务验证。
+- 单条最终视频的累计生成成本不超过 100 元人民币，包括参考分析、预览、配音、合成和任务内重试。
+- 【本次更新】任何图片或视频未经最终审核不得提交；图片和视频分别审核、分别记录版本。
+- 提交失败不得丢失作品，也不得产生重复上传。
+
+## 2. 目标用户与使用场景
+
+### 2.1 核心用户
+
+【本次更新】亚马逊美国站跨境电商卖家，当前先服务工具拥有者本人。用户可处理不同品类的单个商品，拥有商品图片、真实参数、目标 ASIN 和相应的 Seller Central 内容上传权限，但缺少快速制作英文营销图片或视频的能力或时间。
+
+### 2.2 核心痛点
+
+- 找参考、提炼卖点、编写英文脚本和剪辑视频需要切换多个工具。
+- 生成式工具容易改变产品外观，或编造容量、功率、兼容性等参数。
+- 视频生成成本高，直接生成成片后再修改容易浪费时间和费用。
+- 亚马逊提交结果存在处理中、审核拒绝等状态，简单的“上传成功”提示不足以反映真实发布状态。
+
+### 2.3 典型场景
+
+1. 【本次更新】卖家准备为某款商品制作营销内容，先填写产品名称、品类和核心用途，再上传该商品的图片与参数；系统据此生成同类视觉参考、卖点和五种预览，并按选择输出图片、约 15 秒视频或两者。
+2. 卖家发现预览中的连接方式或产品比例不正确，只重做相关预览，不重新生成其余素材。
+3. 【本次更新】卖家完成图片或视频的最终审核并提交到指定 ASIN；网络中断后，系统保留所有作品并先查询各子任务状态，避免再次上传已接收的内容。
+
+## 3. MVP 范围
+
+### 3.1 包含
+
+- 【本次更新】不限预设品类的商品任务创建、目标产品声明和版本保存。
+- 商品图片、真实参数、目标 ASIN 的录入与校验。
+- 【本次更新】生成类型选择：仅图片、仅视频、图片和视频。
+- 自动寻找并保存视觉参考的来源和借鉴理由。
+- 基于真实参数生成英文卖点、英文脚本及中文释义。
+- 五种排版关键帧预览：不规则式、聚焦式、斜切式、中心式、留白式。
+- 预览选择、局部修改和单张重做。
+- 约 15 秒图片动态视频生成，包含字幕和美式英语配音。
+- 【本次更新】图片成品生成、选择、排序和版本管理。
+- 【本次更新】上传类型选择：仅图片、仅视频、图片和视频；可上传类型受已生成且已审核的成品限制。
+- 最终审核、确认提交、发布状态跟踪和安全重试。
+- 单任务耗时、生成次数与累计成本记录。
+
+### 3.2 暂不包含
+
+- 自动选品、销量预测和竞品商业数据分析。
+- TikTok 等其他平台发布。
+- 付费广告账户及广告投放。
+- 多租户、订阅、计费和团队权限。
+- 连续真人动作类 AI 视频。
+- 自动修改亚马逊标题、主图和详情页。
+
+## 4. 核心用户动线
+
 ```mermaid
 flowchart TD
-    A[用户输入 Product Brief] --> B[Dify / Coze 工作流]
-    B --> C[Python 清洗防火墙]
-    C --> D[营销文案与多模态生成]
-
-![系统架构图]！<img width="1422" height="276" alt="image" src="https://github.com/user-attachments/assets/2858d7be-6ec5-4bea-99cf-a4f7b409f15e" />
-
-## 📝 2. 核心 Prompt 模板 (Prompt Engineering)
-
-在文案生成节点中，我们采用了结构化的 Prompt Design 策略以保障品牌一致性：
-
-```markdown
-# Role
-你是一名资深的 [填写角色，如：跨境电商营销专家 / Python 高级架构师]。
-
-# Context & Goal
-- **业务背景**：[说明上下文，如：我们需要为安克出海产品批量生成符合北美本地化习惯的 Amazon 营销资产]
-- **核心目标**：[说明明确目标，如：根据传入的产品需求说明，提取核心卖点并输出结构化的营销文案与生图 Prompt]
-
-# Input Data
-系统将接收以下格式的输入数据：
-- **产品描述 (Product Brief)**: `{{product_brief}}`
-- **目标受众 (Target Audience)**: `{{target_audience}}`
-
-# Workflow Steps
-请严格按照以下步骤依次执行任务：
-1. **分析与提取**：剖析 `product_brief` 中的核心功能与用户痛点，挑选出 3 个最具吸引力的卖点。
-2. **文案创作**：撰写句式极简、语气地道的英文 Headline（控制在 8 词以内）。
-3. **视觉转换**：将产品视觉特征转化为适用于 DALL-E 3 / Flux 的英文 Prompt。
-4. **格式封装**：将生成结果封装为符合 Schema 要求的 JSON 数据，不附加任何额外文本。
-
-# Constraints & Rules
-- **语气风格 (Tone & Manner)**：专业、科技感、简洁，严禁使用夸大宣传。
-- **禁用词列表 (Negative Words)**：严禁出现 "Best"、"No.1"、"Top-tier"、"Cheap" 等绝对化或低质词汇。
-- **技术约束**：必须输出合法 JSON 格式，严格包含指定字段，不得在外层输出任何解释性 Markdown 闲聊。
-
-# Output Schema
-输出内容必须严格遵循以下 JSON 结构：
-```json
-{
-  "product_name": "string, 产品标准英文名称",
-  "headline": "string, 8词以内的英文吸引人标题",
-  "key_features": [
-    "string, 卖点1",
-    "string, 卖点2",
-    "string, 卖点3"
-  ],
-  "image_prompt": "string, 用于生图模型的英文 Prompt，需包含构图、光影及风格"
-}
-当然可以。下面我直接整理成一份**适合 GitHub README / Product Case Study 使用的 Markdown 文档**。我会把前面的内容重新组织成比较专业的产品项目结构，而不是简单复制，方便你之后继续往里面添加技术架构、代码、Demo 和迭代记录。
-
-你可以直接保存为：
-
-```text
-README.md
+    A[新建商品任务] --> A1[明确目标产品、品类和核心用途]
+    A1 --> B[上传该产品图片并填写真实参数]
+    B --> C{资料校验通过?}
+    C -->|否| D[指出缺失或冲突字段]
+    D --> B
+    C -->|是| E[选择生成图片、视频或两者]
+    E --> F[寻找视觉参考并生成卖点]
+    F --> G[生成五种排版预览]
+    G --> H{生成类型}
+    H -->|仅图片| I[生成并选择图片成品]
+    H -->|仅视频| J[确认预览并生成脚本和15秒视频]
+    H -->|两者| K[生成图片成品、脚本和15秒视频]
+    I --> L{图片最终审核通过?}
+    J --> M{视频最终审核通过?}
+    K --> N{图片和视频分别审核通过?}
+    L -->|否| I
+    M -->|否| J
+    N -->|否| K
+    L -->|是| O[选择上传图片]
+    M -->|是| P[选择上传视频]
+    N -->|是| Q[选择上传图片、视频或两者]
+    O --> R[创建唯一发布任务并锁定成品版本]
+    P --> R
+    Q --> R
+    R --> S{亚马逊是否确认接收?}
+    S -->|成功接收| T[分别等待图片或视频审核]
+    S -->|明确失败| U[保留作品并允许安全重试]
+    S -->|结果未知| V[等待核验，禁止自动重传]
+    U --> R
+    V --> S
+    T --> W{平台审核结果}
+    W -->|全部通过并展示| X[已发布]
+    W -->|部分通过| Y[展示分项结果，仅重做失败内容]
+    W -->|拒绝| Z[显示原因并创建修订版本]
+    Y --> I
+    Z --> I
 ```
 
-````markdown
-# AI Marketing Creative Agent
-
-> An AI-powered marketing creative platform that transforms product information into advertising concepts, visual assets, and short-form video through a multi-model AI workflow.
-
----
-
-## 1. Project Overview
-
-AI Marketing Creative Agent is an AI-powered advertising content generation platform designed for small brands, cross-border e-commerce sellers, social media marketers, and marketing agencies.
-
-The platform aims to solve a common problem:
-
-> Users know they need more advertising content, but creating high-quality advertising creatives is expensive, time-consuming, and requires specialised skills.
-
-Instead of providing only an AI video generation tool, this project focuses on building an end-to-end **AI Marketing Creative Workflow**:
+## 5. 功能清单
 
 ```text
-Product Information
-        ↓
-AI Marketing Strategy
-        ↓
-Creative Concepts
-        ↓
-Structured JSON
-        ↓
-Image Generation
-        ↓
-Reference Image
-        ↓
-Video Prompt Optimisation
-        ↓
-Video Generation
-        ↓
-Advertising Creative
-        ↓
-Publish
-        ↓
-Performance Analysis
-        ↓
-Creative Iteration
-````
+跨境电商商品视频工具
+├── 🔴 商品任务
+│   ├── 上传原始商品图片
+│   ├── 填写和确认真实参数
+│   ├── 【本次更新】选择生成图片、视频或两者
+│   └── 保存草稿与版本
+├── 🔴 内容策划
+│   ├── 自动寻找视觉参考
+│   ├── 提炼有依据的卖点
+│   └── 生成英文脚本与中文释义
+├── 🔴 视觉预览
+│   ├── 生成五种排版预览
+│   ├── 选择、修改和单张重做
+│   ├── 产品一致性人工检查
+│   └── 【本次更新】生成可上传图片成品
+├── 🔴 视频制作
+│   ├── 图片动态效果
+│   ├── 英文字幕与美式英语配音
+│   └── 成片版本管理
+├── 🔴 最终审核与发布
+│   ├── 【本次更新】图片与视频分别审核
+│   ├── 【本次更新】选择上传图片、视频或两者
+│   ├── 唯一发布任务和幂等控制
+│   ├── 提交状态核验
+│   └── 失败保留、安全重试与审核结果
+├── 🟡 任务成本与效率
+│   ├── 分阶段耗时
+│   ├── 生成次数
+│   └── 累计成本与预算提醒
+└── ⚪ 后续规划
+    ├── 品类专用参数模板与生成策略
+    ├── TikTok 发布
+    ├── 多账号与团队协作
+    └── 商品标题、主图和详情页优化
+```
 
-The long-term goal is to evolve from an **AI content generation tool** into an **AI Creative Optimization Agent**.
-
----
-
-# 2. Project Motivation
-
-## 2.1 Increasing Demand for Marketing Content
-
-Modern marketing channels such as:
-
-* TikTok
-* Instagram Reels
-* YouTube Shorts
-* Amazon
-* TikTok Shop
-* Shopify
-* Independent websites
-
-increasingly rely on short-form video and visual content.
-
-However, brands do not simply need one video.
-
-A typical marketing process looks more like:
+## 6. 关键页面布局线框图
 
 ```text
-1 Product
-   ↓
-Multiple Creative Concepts
-   ↓
-Multiple Advertising Variations
-   ↓
-Different Platforms
-   ↓
-Continuous Testing
-   ↓
-Performance Optimisation
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Logo / 任务名称              保存状态     累计成本 ¥xx / ¥100    用户   │
+├─────────────┬───────────────────────────────────────┬────────────────────┤
+│ 生成类型     │          图片 / 视频主预览区           │ 当前步骤设置        │
+│ 商品资料     │                                       │ 生成：图片/视频/两者 │
+│ 视觉参考     │                                       │ 卖点与脚本           │
+│ 五种预览     │          ← 页面视觉重心                │ 排版与场景           │
+│ 脚本         │                                       │ 字幕与配音           │
+│ 视频         ├───────────────────────────────────────┤ 参数依据与风险提示    │
+│ 最终审核     │ 缩略图 / 版本 / 播放进度 / 对比         │ 修改意见             │
+│ 发布状态     │                                       │ 上传：图片/视频/两者 │
+├─────────────┴───────────────────────────────────────┴────────────────────┤
+│ 进度、耗时与错误信息                      [保存草稿] [生成/重做/下一步] │
+└──────────────────────────────────────────────────────────────────────────┘
+
+最终审核时右侧替换为图片与视频的分项审核清单；只有本次选中上传的内容全部通过后，才显示“确认提交到亚马逊”。
 ```
 
-This creates a large amount of creative production work.
+## 7. 核心功能详细需求
 
----
+### 7.1 商品资料录入
 
-## 2.2 Existing AI Tools Are Fragmented
+**功能描述**：【本次更新】先让卖家明确本次任务的目标产品，再建立内容生成的事实来源。系统不得自行把商品识别成另一个品类，也不得把参考图中出现、但卖家未确认的参数写入卖点或脚本。
 
-Users currently need to combine multiple tools:
+**必填内容**：【本次更新】任务名称、目标产品名称、商品品类、核心用途、目标市场、至少一张该产品的商品图，以及发布时使用的目标 ASIN。商品参数字段根据品类动态展示；卖家也可以补充自定义参数。所有用作卖点的参数必须被卖家标记为“已确认”。
 
-```text
-ChatGPT
-    ↓
-Creative Idea
+**目标产品确认**：系统可以根据图片建议产品名称和品类，但必须由卖家确认。确认前不得查找参考、生成卖点或开始内容制作。卖家更换目标产品或品类后，旧的参考结果、卖点、预览和审核状态全部标记为过期，不能继续发布。
 
-Image Generation Tool
-    ↓
-Product Visual
+**交互要求**：上传后显示缩略图、分辨率和文件大小；支持删除、排序和指定主参考图。参数冲突时禁止进入生成步骤，并指出冲突字段。
 
-Video Generation Tool
-    ↓
-Advertisement Video
+**边界处理**：
 
-Canva / CapCut
-    ↓
-Editing
+- 图片为空：显示示例和“上传商品图片”。
+- 图片模糊或无法看清产品结构：允许保存，但标记风险并要求补图。
+- 文件过大或格式不支持：说明限制并给出压缩或转换建议。
+- 网络中断：保留已完成上传和表单草稿。
+- ASIN 格式错误：禁止进入发布阶段，不影响前期内容制作。
 
-TikTok / Instagram
-    ↓
-Publishing
-```
+### 7.2 视觉参考与卖点生成
 
-The problem is no longer simply a lack of AI capabilities.
+**功能描述**：自动寻找同类商品的视觉参考，分析构图、配色、场景、信息层级和卖点表达。不得直接复制他人的品牌标识、文案或受保护素材。
 
-The problem is:
+**输出内容**：每个参考项包含缩略图、来源链接、获取时间、参考理由和可借鉴元素。系统同时给出 3 个以内的卖点候选，并为每个卖点标注商品参数或卖家确认信息的依据。
 
-> **AI tools are powerful but fragmented. Users still need to manually coordinate the entire workflow.**
+**卖点生成原则**：【本次更新】卖点必须根据当前任务明确的目标产品、核心用途和已确认参数生成。此前讨论的充电宝及“边充边拍”只作为流程示例，不属于产品默认品类或默认卖点。
 
----
+**异常处理**：自动查找失败时，允许卖家上传参考图或跳过。来源无法确认的图片仅用于内部构图分析，不得直接进入成片。
 
-## 2.3 From "Generation" to "Decision + Generation"
+### 7.3 五种排版预览
 
-Most AI creative tools focus on:
+**功能描述**：围绕同一核心卖点生成五张低成本关键帧，分别使用不规则式、聚焦式、斜切式、中心式和留白式排版。
 
-> "Generate a video."
+**交互要求**：五张图并列比较；点击放大；选择一张作为视频方向；可修改文案、背景、场景和产品位置；可单独重做某一张。每次重做前显示预计成本。
 
-However, the real marketing problem is:
+**一致性要求**：产品颜色、接口位置、线材数量和品牌标识应与原图一致；场景图不得暗示未经确认的功能。AI 无法可靠还原时，预览必须显示风险标签并要求人工确认。
 
-> "What kind of video should I create?"
+**【本次更新】图片成品**：当生成类型包含图片时，卖家可以从五种预览中选择一张或多张生成高清成品。每张成品独立保存版本、用途和排序；用途至少包括主图候选、辅图和详情场景图。主图候选必须单独进行平台规则检查，不得因视觉效果好而自动设为主图。
 
-Therefore, the product focuses on both:
+### 7.4 脚本、字幕和视频合成
 
-* Creative decision-making
-* Content generation
-* Creative iteration
-* Performance optimisation
+**功能描述**：当生成类型包含视频时，根据确认的卖点和选中预览生成约 15 秒视频。默认结构为痛点或场景引入、产品使用方式、核心卖点定格。选择“仅图片”时，本模块不执行，也不产生视频费用。
 
-The long-term product loop is:
+**内容要求**：英文脚本配中文释义；英文字幕与配音文本保持一致；字幕在静音状态下也能完整表达卖点；避免无法证明的比较级、最高级和性能承诺。
 
-```text
-Think
-  ↓
-Create
-  ↓
-Test
-  ↓
-Learn
-  ↓
-Improve
-  ↓
-Create Again
-```
+**编辑能力**：逐段修改文案、时长、画面、转场、字幕和配音；修改后生成新版本，旧版本可查看和恢复。仅修改字幕时，不重新生成图片。
 
----
+**失败处理**：某个生成步骤失败时保留此前产物并从失败步骤重试。超出 100 元预算前必须暂停并显示原因，不得自动继续扣费。
 
-# 3. Core User Problems
+### 7.5 最终审核
 
-| User Pain Point               | User Question                                     | Product Solution            |
-| ----------------------------- | ------------------------------------------------- | --------------------------- |
-| Lack of creative ideas        | "What kind of advertisement should I create?"     | AI Creative Strategy        |
-| Lack of prompt-writing skills | "How should I describe the visual?"               | Prompt Generation Agent     |
-| Fragmented AI tools           | "Why do I need to switch between multiple tools?" | Multi-model Workflow        |
-| Slow production               | "Why does one advertisement take hours?"          | End-to-end AI Generation    |
-| Lack of optimisation          | "How do I know whether the advertisement works?"  | Analytics + AI Optimisation |
+**功能描述**：建立独立于普通预览的发布前硬门槛。生成完成不等于审核通过。【本次更新】图片与视频是两个独立审核对象：上传图片需要图片审核通过，上传视频需要视频审核通过，上传两者则两项都必须通过。
 
-### Core Value Proposition
+**审核清单**：
 
-The product is not simply designed to save users a few copy-and-paste operations.
+- 产品外观、颜色、接口、线材和使用方式正确。
+- 容量、功率、兼容性等参数与确认资料一致。
+- 英文字幕、配音、拼写和中文释义一致。
+- 视频标题、视频类型、语言、品牌及目标 ASIN 已确认。
+- 已选定唯一成片版本和缩略图。
+- 【本次更新】已选定要上传的图片版本、用途与排序，并逐张确认外观、文字和参数。
+- 【本次更新】已选择上传类型，且所选类型存在已审核通过的成品。
+- 卖家已确认内容可提交到亚马逊。
 
-Its core value is:
+所有相关项目勾选后，卖家仍需点击一次“确认提交到亚马逊”。点击时弹窗展示 ASIN、上传类型、图片清单及排序、视频版本、标题和不可在处理中重复提交的说明。审核记录保存审核人、时间、内容类型、内容版本和资料快照；某类内容一旦修改，仅该类内容的审核自动失效。
 
-> **Reduce the time, cost, and expertise required to transform a product into a testable advertising creative.**
+### 7.6 发布、状态核验与防重复
 
----
+**功能描述**：【本次更新】把经过最终审核的固定图片版本、视频版本或两者提交到目标 ASIN，并持续区分本地任务状态与亚马逊状态。生成类型与上传类型相互独立，例如可以生成图片和视频，但本次只上传视频。
 
-# 4. Target Users
+**幂等规则**：图片提交按“账号 + ASIN + 图片文件哈希集合 + 图片审核版本”生成幂等键；视频提交按“账号 + ASIN + 视频文件哈希 + 视频审核版本”生成幂等键。上传两者时创建一个父任务和两个可独立重试的子任务。首次点击后立即锁定按钮；同一幂等键只能存在一个有效任务。
 
-## 4.1 Cross-border E-commerce Sellers
+**状态定义**：
 
-Examples:
+- `READY_FOR_REVIEW`：所选图片或视频成品完成，尚未最终审核。
+- `APPROVED`：最终审核完成，尚未提交。
+- `SUBMITTING`：请求已发出，结果尚未返回。
+- `RECEIVED`：亚马逊确认接收，等待审核。
+- `UNKNOWN`：请求结果不确定，等待核验，禁止自动重传。
+- `FAILED_RETRYABLE`：确认未被接收，可以安全重试。
+- `REJECTED`：亚马逊审核拒绝，显示原因并允许创建修订版本。
+- `PUBLISHED`：亚马逊审核通过并确认已展示。
 
-* Amazon sellers
-* TikTok Shop sellers
-* Shopify sellers
-* DTC brands
+**重试规则**：失败时保留全部商品资料、参考素材、图片成品、预览、脚本、配音、视频、审核记录和发布日志。图片或视频仅一项失败时，不重复提交已成功的另一项。重试前先查询对应子任务状态；只有确认未接收或明确可安全重试时才发送。无法查询时保持 `UNKNOWN`，由卖家人工核验，不能自动创建第二个上传任务。
 
-### Characteristics
+**技术验证项**：第一版开发前必须确认目标卖家账号可使用的官方接口、授权范围、视频上传方式和状态查询能力。如果没有满足要求的官方自动化接口，MVP 将发布步骤降级为“生成合规文件与提交资料包，并在 Seller Central 中由卖家完成上传”；不得用脆弱的页面自动化冒充稳定接口。
 
-* Large number of products
-* High demand for marketing content
-* Limited creative teams
-* Limited marketing budgets
-* Strong focus on ROI
+## 8. 关键数据规范
 
-### Core Need
-
-> Product information → Advertising Creative
-
----
-
-## 4.2 Small Brands / DTC Brands
-
-Typical team size:
-
-```text
-3–10 people
-```
-
-Possible team structure:
-
-```text
-Founder
-Marketing
-Sales
-Part-time Designer
-```
-
-These teams may not have a dedicated creative department.
-
-### Core Need
-
-> Generate high-quality advertising creatives quickly without building a large creative team.
-
----
-
-## 4.3 Social Media Managers
-
-These users may already understand design and marketing.
-
-Their biggest problem is often:
-
-> **Creative production capacity.**
-
-For example:
-
-```text
-Weekly Content Requirements
-
-TikTok       5 videos
-Instagram    3 videos
-Facebook     3 videos
-```
-
-The AI Agent becomes a creative production assistant.
-
----
-
-## 4.4 Marketing Agencies
-
-Agencies can become an important high-value customer segment.
-
-A typical agency may manage:
-
-```text
-10 Clients
-×
-Multiple Products
-×
-Multiple Creative Variations
-```
-
-They need:
-
-* Batch generation
-* Multiple workspaces
-* Team collaboration
-* Brand management
-* Creative templates
-* API access
-
-### Potential Positioning
-
-> AI Creative Infrastructure for Marketing Agencies
-
----
-
-# 5. User Personas
-
-| Persona              | Main Goal                    | Main Pain Point            | Key Feature          |
-| -------------------- | ---------------------------- | -------------------------- | -------------------- |
-| E-commerce Seller    | Sell products                | Lack of creative resources | AI Ad Generator      |
-| Small Brand          | Build brand awareness        | Small marketing team       | AI Creative Director |
-| Social Media Manager | Produce content consistently | Low creative capacity      | Creative Automation  |
-| Marketing Agency     | Manage multiple clients      | High production workload   | Batch + Team + API   |
-
----
-
-# 6. User Scenarios → Product Features
-
-A key product design principle is:
-
-> **User Scenario → Pain Point → Feature**
-
----
-
-## Scenario 1: User Has a New Product
-
-### User Action
-
-Upload:
-
-* Product image
-* Product description
-* Target market
-* Key selling points
-
-### AI Workflow
-
-```text
-Product Information
-        ↓
-Product Analysis
-        ↓
-Target Audience
-        ↓
-Selling Points
-        ↓
-Advertising Strategy
-        ↓
-Creative Concepts
-```
-
-### Product Feature
-
-**Creative Strategy Agent**
-
----
-
-# 7. Scenario 2: User Selects a Creative Concept
-
-The system generates multiple creative directions.
-
-Example:
-
-```text
-Creative Concept A
-Problem → Solution
-
-Creative Concept B
-Before → After
-
-Creative Concept C
-Lifestyle Story
-
-Creative Concept D
-Product Demonstration
-```
-
-The user selects one.
-
-The AI then generates:
-
-```text
-Hook
-↓
-Story
-↓
-Visual Style
-↓
-Image Prompt
-↓
-Video Prompt
-```
-
-### Product Feature
-
-**AI Creative Director**
-
----
-
-# 8. Scenario 3: Generate Visual Reference
-
-The system converts the creative concept into a structured JSON object.
-
-Example:
-
-```json
-{
-  "product_name": "Luxury Skincare Serum",
-  "creative_concept": "Premium Morning Skincare Ritual",
-  "image_prompt": "A luxury skincare serum bottle placed on white marble...",
-  "video_prompt": "Slow cinematic camera movement around the serum bottle...",
-  "camera": {
-    "movement": "slow dolly in",
-    "angle": "low angle"
-  },
-  "lighting": "soft morning sunlight",
-  "style": "luxury commercial",
-  "duration": 8
-}
-```
-
-The `image_prompt` is then sent to an image generation model.
-
-```text
-Image Prompt
-      ↓
-Image Generation Model
-      ↓
-Reference Image
-```
-
-### Product Feature
-
-**AI Visual Studio**
-
----
-
-# 9. Scenario 4: Generate Advertising Video
-
-The system combines:
-
-* Original creative concept
-* Image prompt
-* Reference image
-* Video prompt
-
-and sends them to a Video Director Agent.
-
-The Video Director Agent generates a final structured video prompt.
-
-Example:
-
-```json
-{
-  "final_video_prompt": "...",
-  "camera_motion": "slow cinematic dolly in",
-  "lighting": "soft morning sunlight",
-  "duration": 8,
-  "aspect_ratio": "9:16"
-}
-```
-
-The final inputs are:
-
-```text
-Reference Image
-+
-Final Video Prompt
-+
-Video Parameters
-        ↓
-Video Generation Model
-        ↓
-Final Advertisement
-```
-
-### Product Feature
-
-**AI Video Generator**
-
----
-
-# 10. Scenario 5: User Is Not Satisfied with the Result
-
-Instead of asking users to rewrite prompts manually, provide one-click creative iteration.
-
-Possible options:
-
-```text
-More Premium
-More Energetic
-More Emotional
-More Realistic
-More Gen-Z
-More Luxury
-More Minimal
-More UGC
-```
-
-The AI automatically modifies the creative direction.
-
-### Product Feature
-
-**Creative Iteration**
-
----
-
-# 11. End-to-End Product Workflow
-
-```text
-                    Product Information
-                           │
-                           ▼
-                  ┌─────────────────┐
-                  │ AI Strategy     │
-                  │ Agent           │
-                  └────────┬────────┘
-                           │
-                           ▼
-                    Creative Ideas
-                           │
-                           ▼
-                  ┌─────────────────┐
-                  │ AI Creative     │
-                  │ Director        │
-                  └────────┬────────┘
-                           │
-                           ▼
-                   Creative Concept
-                           │
-                ┌──────────┴──────────┐
-                ▼                     ▼
-        Image Generation       Video Prompt
-                │                     │
-                ▼                     │
-        Reference Image               │
-                │                     │
-                └──────────┬──────────┘
-                           ▼
-                  Video Generation
-                           │
-                           ▼
-                    Advertisement
-                           │
-                           ▼
-                        Publish
-                           │
-                           ▼
-                     Performance
-                           │
-                           ▼
-                  AI Optimisation
-                           │
-                           ▼
-                   New Creatives
-```
-
----
-
-# 12. Multi-Model Architecture
-
-The system uses multiple specialised AI models rather than relying on a single model.
-
-```text
-                    User Input
-                        │
-                        ▼
-               ┌────────────────┐
-               │ LLM #1         │
-               │ Creative Agent │
-               └───────┬────────┘
-                       │
-                       ▼
-                Structured JSON
-                       │
-                       ▼
-               ┌────────────────┐
-               │ Image Model    │
-               └───────┬────────┘
-                       │
-                       ▼
-                 Reference Image
-                       │
-                       ▼
-               ┌────────────────┐
-               │ LLM #2         │
-               │ Video Director │
-               └───────┬────────┘
-                       │
-                       ▼
-                 Video Prompt
-                       │
-                       ▼
-               ┌────────────────┐
-               │ Video Model    │
-               └───────┬────────┘
-                       │
-                       ▼
-                 Final Video
-```
-
-The system can be implemented using a Python backend and API-based model orchestration.
-
----
-
-# 13. MVP
-
-The first version should remain simple.
-
-## V0 — Prototype
-
-```text
-Product Input
-      ↓
-LLM
-      ↓
-Structured JSON
-      ↓
-Image Generation
-      ↓
-Reference Image
-      ↓
-Video Generation
-      ↓
-Final Video
-```
-
-### Goal
-
-> Validate whether the end-to-end workflow works.
-
----
-
-# 14. V1 — Creative Agent
-
-Add multiple creative concepts.
-
-```text
-Product
-   ↓
-AI
-   ↓
-3–5 Creative Concepts
-   ↓
-User Selects One
-   ↓
-Generate Advertisement
-```
-
-### Goal
-
-> Validate whether users like AI-generated creative strategies.
-
----
-
-# 15. V2 — Creative Library
-
-Add:
-
-* Creative History
-* Templates
-* Remix
-* Brand Kit
-* Saved Prompts
-* Project Management
-
-### Goal
-
-> Increase user retention and content reuse.
-
----
-
-# 16. V3 — Creative Optimization Agent
-
-Connect advertising performance data.
-
-```text
-Advertisement
-      ↓
-Publish
-      ↓
-Performance Data
-      ↓
-AI Analysis
-      ↓
-Identify What Works
-      ↓
-Generate New Creative
-      ↓
-Test Again
-```
-
-The product evolves from:
-
-> AI Content Generator
-
-to:
-
-> **AI Creative Optimization Agent**
-
----
-
-# 17. Community Model
-
-The community is based on **Creative Templates + Remix**.
-
-Users can publish:
-
-* Creative Concepts
-* Advertising Templates
-* Prompts
-* Generated Videos
-* Hooks
-* Visual Styles
-
-Example:
-
-```text
-Luxury Product Unboxing
-```
-
-Another user can click:
-
-```text
-Remix This Creative
-```
-
-The system automatically:
-
-```text
-Original Creative
-      ↓
-Copy Template
-      ↓
-Replace Product
-      ↓
-Adapt Prompt
-      ↓
-Generate New Advertisement
-```
-
----
-
-# 18. Creative Marketplace
-
-In the future, high-performing creative templates can become marketplace assets.
-
-Example:
-
-```text
-UGC Product Review Template
-$2.99
-
-Luxury Product Advertisement
-$4.99
-
-TikTok Problem-Solution Template
-Free
-```
-
-Creators can receive a percentage of revenue.
-
-Potential revenue split:
-
-```text
-Creator     70%
-Platform    30%
-```
-
-This creates an additional business model:
-
-> **SaaS + Creative Marketplace**
-
----
-
-# 19. Community Growth Loop
-
-The community can create a self-reinforcing growth loop:
-
-```text
-Users
-  ↓
-Create Ads
-  ↓
-Share Creatives
-  ↓
-Community Templates
-  ↓
-Social Media Content
-  ↓
-New Users
-  ↓
-Create More Ads
-  ↓
-More Community Content
-```
-
-This can gradually reduce dependence on paid acquisition.
-
----
-
-# 20. Business Model
-
-## 20.1 Freemium
-
-### Free
-
-Possible limitations:
-
-* Limited creative generations
-* Limited image generations
-* One free video
-* Watermark
-* Community templates
-
-Goal:
-
-> Let users experience the core product value before paying.
-
----
-
-## 20.2 Pro
-
-Potential pricing:
-
-```text
-$19–39 / month
-```
-
-Features:
-
-* More video credits
-* HD generation
-* No watermark
-* Brand Kit
-* Creative history
-* More AI models
-* Commercial usage
-
----
-
-## 20.3 Business
-
-Potential pricing:
-
-```text
-$99+ / month
-```
-
-Features:
-
-* Team workspace
-* Multiple brands
-* Batch generation
-* Brand management
-* Analytics
-* Collaboration
-* Shared creative library
-
----
-
-## 20.4 Agency
-
-Custom pricing.
-
-Features:
-
-* Multiple clients
-* Multiple workspaces
-* Batch generation
-* API access
-* Team permissions
-* White-label options
-* Advanced analytics
-
----
-
-# 21. Unit Economics
-
-The main variable costs are expected to come from:
-
-```text
-LLM API
-+
-Image Generation API
-+
-Video Generation API
-```
-
-Video generation is likely to be the most significant variable cost.
-
-Therefore, the pricing model should not rely only on unlimited generations.
-
-A credit-based system is more sustainable:
-
-```text
-Subscription
-      +
-Generation Credits
-      +
-Optional Credit Top-up
-```
-
----
-
-# 22. Validation Strategy
-
-The product should not be fully developed before validating demand.
-
-The first goal is to answer:
-
-> **Will users actually use AI to generate advertising creatives?**
-
----
-
-## Validation 1 — Landing Page
-
-Create a simple landing page:
-
-```text
-Turn Your Product
-Into High-Quality Ads
-
-Upload your product.
-AI creates your advertising creative.
-
-[ Generate My Ad ]
-```
-
-Measure:
-
-```text
-Visitors
-   ↓
-Click "Generate"
-   ↓
-Upload Product
-   ↓
-Generate Advertisement
-   ↓
-Return to Product
-```
-
----
-
-# 23. Validation 2 — Concierge MVP
-
-The first version does not need to be fully automated.
-
-Users upload a product.
-
-The backend manually triggers the AI workflow.
-
-Then the generated advertisement is delivered to the user.
-
-This allows validation of:
-
-* Output quality
-* User satisfaction
-* Willingness to use again
-* Willingness to pay
-
-before investing heavily in infrastructure.
-
----
-
-# 24. Key Product Metrics
-
-## Activation
-
-```text
-Sign Up
-  ↓
-Upload Product
-  ↓
-Generate First Advertisement
-```
-
----
-
-## Time to Value
-
-Measure:
-
-> How long does it take from product upload to the first usable advertisement?
-
-Target:
-
-```text
-< 5 minutes
-```
-
----
-
-## Generation → Publish Rate
-
-Measure:
-
-> What percentage of generated creatives are actually published?
-
-This is more meaningful than simply measuring generation volume.
-
----
-
-## Retention
-
-Measure whether users return:
-
-```text
-Day 1
-Day 7
-Day 30
-```
-
-A strong signal is:
-
-> Users return every week to generate new advertising creatives.
-
----
-
-## Conversion
-
-Important funnel:
-
-```text
-Website Visit
-      ↓
-Sign Up
-      ↓
-Upload Product
-      ↓
-Generate Creative
-      ↓
-Publish Creative
-      ↓
-Subscribe
-```
-
----
-
-# 25. Product Iteration Framework
-
-Product decisions should follow:
-
-```text
-Hypothesis
-    ↓
-Build
-    ↓
-Measure
-    ↓
-Learn
-    ↓
-Iterate
-```
-
-Example:
-
-### Hypothesis
-
-> Users want multiple creative concepts before generating a video.
-
-### MVP
-
-Generate 3 concepts.
-
-### Metric
-
-Measure:
-
-```text
-Concept Selection Rate
-Video Generation Rate
-User Satisfaction
-```
-
-### Decision
-
-If users consistently select one concept type:
-
-> Improve that creative category.
-
----
-
-# 26. Go-To-Market Strategy
-
-The initial target market should be narrow.
-
-Instead of:
-
-> AI advertising for everyone
-
-start with:
-
-> **AI Ads for Cross-border E-commerce Sellers**
-
-Potential initial users:
-
-* Amazon sellers
-* TikTok Shop sellers
-* Shopify brands
-* Small DTC brands
-
-This market has a clear connection:
-
-```text
-Product
- ↓
-Advertisement
- ↓
-Traffic
- ↓
-Conversion
- ↓
-Revenue
-```
-
----
-
-# 27. Cold Start Strategy
-
-The initial GTM strategy should focus on **content-led growth** rather than expensive advertising.
-
-Potential channels:
-
-* TikTok
-* Instagram
-* YouTube Shorts
-* LinkedIn
-* Product Hunt
-* Reddit communities
-* E-commerce communities
-
----
-
-# 28. Social Media Content Strategy
-
-The product itself should become a content-generation engine.
-
----
-
-## Content Type 1 — Before / After
-
-```text
-Original Product Image
-        ↓
-AI
-        ↓
-Professional Advertisement
-```
-
-This demonstrates product value immediately.
-
----
-
-## Content Type 2 — Prompt → Result
-
-Example:
-
-```text
-I gave AI this product...
-
-This is what it created.
-```
-
-Then show:
-
-```text
-Product
-↓
-Prompt
-↓
-Generated Image
-↓
-Generated Video
-```
-
----
-
-## Content Type 3 — AI Challenge
-
-Example:
-
-> "I gave AI 5 random Amazon products and asked it to create TikTok ads."
-
-Then show:
-
-```text
-Product 1 → Advertisement
-Product 2 → Advertisement
-Product 3 → Advertisement
-Product 4 → Advertisement
-Product 5 → Advertisement
-```
-
-This simultaneously acts as:
-
-* Product Demo
-* Social Content
-* User Education
-* Marketing
-
----
-
-# 29. Product-Led Growth Loop
-
-The ideal growth loop is:
-
-```text
-User
- ↓
-Generates Advertisement
- ↓
-Publishes Advertisement
- ↓
-"Made with AI Marketing Creative Agent"
- ↓
-Audience Sees It
- ↓
-Audience Clicks
- ↓
-New User
- ↓
-Generates Their Own Advertisement
-```
-
-The product output becomes the marketing channel.
-
----
-
-# 30. Long-Term Competitive Advantage
-
-The competitive advantage should not depend on a single image or video model.
-
-Models will continue to improve and become commoditised.
-
-Long-term differentiation should come from:
-
-### 1. Creative Data
-
-```text
-Product
-+
-Creative
-+
-Prompt
-+
-Performance
-```
-
----
-
-### 2. Creative Templates
-
-A library of proven advertising structures.
-
----
-
-### 3. Brand Memory
-
-The system remembers:
-
-* Brand identity
-* Product positioning
-* Visual style
-* Tone of voice
-* Target audience
-* Brand assets
-
----
-
-### 4. Performance Feedback
-
-The system learns:
-
-```text
-Creative
- ↓
-Performance
- ↓
-Insight
- ↓
-New Creative
-```
-
----
-
-### 5. Community
-
-Users contribute:
-
-* Templates
-* Creative concepts
-* Prompts
-* Successful advertising formats
-
-This creates a potential network effect.
-
----
-
-# 31. Product Flywheel
-
-The long-term product flywheel is:
-
-```text
-                    Product Input
-                         │
-                         ▼
-                AI Marketing Strategy
-                         │
-                         ▼
-                  Creative Concepts
-                         │
-                         ▼
-                 Image + Video AI
-                         │
-                         ▼
-                    Advertisement
-                         │
-                         ▼
-                       Publish
-                         │
-                         ▼
-                    Performance
-                         │
-                         ▼
-                 AI Optimisation
-                         │
-                         ▼
-                  Better Creatives
-                         │
-                         ▼
-                Community Templates
-                         │
-                         ▼
-                     New Users
-                         │
-                         └───────────────┐
-                                         │
-                                         ▼
-                                More Creative Data
-```
-
----
-
-# 32. Product Vision
-
-The ultimate vision is not to build another AI video generator.
-
-The vision is:
-
-> **Build an AI Creative Operating System for modern marketing teams.**
-
-The evolution can be represented as:
-
-```text
-AI Prompt Generator
-        ↓
-AI Content Generator
-        ↓
-AI Creative Agent
-        ↓
-AI Creative Optimization Agent
-        ↓
-AI Marketing Operating System
-```
-
----
-
-# 33. One-Sentence Product Positioning
-
-### Short Version
-
-> **Turn your product into high-performing advertising creatives with AI.**
-
-### More Product-Oriented Version
-
-> **An AI Marketing Creative Agent that transforms product information into advertising strategies, visual assets, and short-form videos through an automated multi-model workflow.**
-
-### Long-Term Vision
-
-> **From product information to creative strategy, content generation, performance analysis, and continuous optimisation — all in one AI-powered marketing workflow.**
-
----
-
-# 34. Roadmap
-
-| Stage | Core Capability         | Goal                             |
-| ----- | ----------------------- | -------------------------------- |
-| V0    | Product → Image → Video | Validate technical feasibility   |
-| V1    | Creative Strategy Agent | Validate creative value          |
-| V2    | Templates + Remix       | Improve retention                |
-| V3    | Community               | Build network effects            |
-| V4    | Performance Analytics   | Connect creation with results    |
-| V5    | AI Optimisation         | Close the creative feedback loop |
-| V6    | Marketplace + API       | Expand monetisation              |
-| V7    | Marketing OS            | Build long-term platform         |
-
----
-
-# 35. MVP Success Criteria
-
-The MVP should answer five questions:
-
-1. **Can AI generate usable advertising creatives?**
-2. **Do users believe the output saves them time?**
-3. **Will users generate more than one creative?**
-4. **Will users publish the generated content?**
-5. **Are users willing to pay for continued generation?**
-
-If the answer to these questions is positive, the product has a strong foundation for further development.
-
----
-
-# 36. Final Product Concept
-
-The core product loop can ultimately be summarised as:
-
-```text
-                    THINK
-                      ↓
-                  CREATE
-                      ↓
-                    TEST
-                      ↓
-                   ANALYSE
-                      ↓
-                  OPTIMISE
-                      ↓
-                   CREATE
-                      ↺
-```
-
-The goal is to transform advertising production from:
-
-> **Manual + Fragmented + Expensive**
-
-into:
-
-> **AI-powered + Automated + Iterative + Data-driven**
-
----
-
-## Conclusion
-
-AI Marketing Creative Agent is designed around a simple principle:
-
-> **The future of AI marketing is not simply generating more content. It is generating the right content, testing it, learning from the results, and continuously improving it.**
-
-The initial product can start with a relatively simple multi-model workflow:
-
-```text
-LLM
- ↓
-Structured JSON
- ↓
-Image Model
- ↓
-Reference Image
- ↓
-Video Director LLM
- ↓
-Video Model
- ↓
-Advertisement
-```
-
-But the long-term opportunity is much larger:
-
-```text
-Strategy
-   ↓
-Creation
-   ↓
-Distribution
-   ↓
-Performance
-   ↓
-Learning
-   ↓
-Optimisation
-   ↺
-```
-
-This creates the foundation for an AI-powered marketing creative platform rather than a simple AI content generation tool.
-
-````
-
-### GitHub 目录我建议你最终做成这样
-
-```text
-ai-marketing-creative-agent/
-│
-├── README.md
-│
-├── docs/
-│   ├── product-strategy.md
-│   ├── user-research.md
-│   ├── user-personas.md
-│   ├── user-journey.md
-│   ├── prd.md
-│   ├── business-model.md
-│   ├── gtm-strategy.md
-│   └── roadmap.md
-│
-├── src/
-│   ├── llm/
-│   ├── image/
-│   ├── video/
-│   └── workflow/
-│
-├── prompts/
-│   ├── creative_director.md
-│   └── video_director.md
-│
-├── examples/
-│
-├── .env.example
-├── requirements.txt
-└── README.md
-````
-
-这样以后你在 GitHub 上展示的就不只是代码，而是一套完整的 **AI 产品案例（Product Case Study）+ 技术实现 + 商业化思路**。这对于你拿它作为 AI / AI Agent 方向的求职项目会更有价值。
+| 字段 | 类型 | 必填 | 规则 |
+|---|---|---:|---|
+| task_id | UUID | 是 | 创建任务时生成且不可变 |
+| task_name | 字符串 | 是 | 1–80 字符 |
+| marketplace | 枚举 | 是 | MVP 固定 `Amazon US` |
+| target_product_name | 字符串 | 是 | 【本次更新】卖家明确填写；2–100 字符 |
+| category | 字符串/受控选项 | 是 | 【本次更新】卖家选择或自定义，系统建议结果须经确认 |
+| core_use_case | 字符串 | 是 | 【本次更新】说明产品解决的问题和主要使用场景，10–500 字符 |
+| generation_mode | 枚举 | 是 | 【本次更新】`IMAGE`、`VIDEO`、`BOTH` |
+| upload_mode | 枚举 | 发布时是 | 【本次更新】`IMAGE`、`VIDEO`、`BOTH`；只能选择已生成且审核通过的类型 |
+| asin | 字符串 | 发布时是 | 10 位 ASIN，提交前再次校验 |
+| product_images | 文件数组 | 是 | 至少 1 张；允许格式及大小待技术验证 |
+| product_specs | 键值对象 | 是 | 【本次更新】按品类动态生成，也允许自定义；宣传字段必须带 `confirmed=true` |
+| reference_items | 对象数组 | 否 | 保存来源、时间、缩略图和分析摘要 |
+| selected_layout | 枚举 | 生成视频前是 | 五种排版之一 |
+| image_assets | 对象数组 | 生成图片时是 | 【本次更新】文件、哈希、版本、用途、排序、审核状态 |
+| script_version | 整数 | 是 | 每次修改递增 |
+| video_version | 整数 | 是 | 每次重新合成递增 |
+| video_hash | 字符串 | 上传视频时是 | 用于锁定内容与防重复 |
+| approval_records | 对象数组 | 发布时是 | 【本次更新】按图片/视频保存审核人、时间、版本和资料快照 |
+| publish_idempotency_keys | 对象 | 发布时是 | 【本次更新】图片与视频分别生成；同一内容与目标只能有一个有效任务 |
+| publish_status | 枚举 | 是 | 使用 7.6 的状态集合 |
+| accumulated_cost_cny | 小数 | 是 | 单任务累计，默认上限 100 |
+
+## 9. 页面与系统文案规范
+
+整体采用简洁直接的效率工具风格。按钮以动作开头；错误提示说明原因和下一步；“已生成”“已提交”“已发布”必须严格区分。
+
+| 场景 | 建议文案 |
+|---|---|
+| 空任务页 | 还没有商品任务。先说明要推广的产品，再上传图片和参数。 |
+| 生成中 | 正在生成预览，已完成 3/5。你可以稍后返回。 |
+| 预算提醒 | 预计本次生成后累计费用为 ¥92，接近 ¥100 上限。 |
+| 最终审核按钮 | 完成最终审核 |
+| 生成类型 | 生成图片 / 生成视频 / 图片和视频都生成 |
+| 上传类型 | 上传图片 / 上传视频 / 图片和视频都上传 |
+| 发布按钮 | 确认提交到亚马逊 |
+| 提交处理中 | 亚马逊正在接收视频，请勿重复提交。 |
+| 结果未知 | 暂时无法确认亚马逊是否已接收。系统已停止重传，请先核验状态。 |
+| 明确失败 | 提交未被亚马逊接收，作品已完整保留，可以安全重试。 |
+| 已接收 | 亚马逊已接收视频，正在审核。 |
+| 已发布 | 视频已通过审核并显示在商品页面。 |
+
+## 10. 非功能性需求
+
+- **可靠性**：每个生成阶段完成后立即持久化；刷新页面或服务重启后可继续任务。
+- **安全性**：亚马逊凭据加密保存；日志不得记录密码、访问令牌或完整授权信息。
+- **权限**：MVP 为单用户，但提交动作仍必须记录操作人和时间。
+- **可追溯性**：卖点能追溯到确认参数；发布能追溯到成片哈希和审核快照。
+- **兼容性**：优先支持桌面端最新版 Chrome 或 Edge。
+- **性能**：普通页面操作 2 秒内给出反馈；生成任务显示阶段进度，不以同步请求阻塞页面。
+- **数据保留**：默认永久保留任务与最终作品，原始素材和中间版本的保留周期待确认。
+- **可恢复性**：第三方服务超时、网络中断或浏览器关闭后，不丢失已完成阶段和费用记录。
+
+## 11. 验收标准
+
+1. 【本次更新】用户能分别选择仅生成图片、仅生成视频、同时生成图片和视频；未选择的类型不会执行，也不会产生对应费用。
+2. 【本次更新】发布前可以独立选择仅上传图片、仅上传视频、同时上传图片和视频；系统禁止选择不存在或未审核通过的内容类型。
+3. 未确认的参数不会出现在卖点、图片文字、脚本、字幕或配音中。
+4. 五种预览能独立查看、选择、修改和重做；单张重做不影响其余预览。
+5. 每次生成前显示预计费用，累计超过 100 元前系统必须暂停等待处理。
+6. 修改已审核图片只使图片审核失效；修改已审核视频只使视频审核失效；未经对应审核不能提交。
+7. 连续点击、刷新页面或网络重连不会为同一 ASIN 和同一内容版本创建第二个有效发布任务。
+8. 同时上传图片和视频时，一项失败不会导致另一项重复提交；失败内容可以独立安全重试。
+9. 提交失败或结果未知时，全部素材和版本仍可访问；结果未知时系统不会自动重传。
+10. 系统只在亚马逊确认对应图片或视频已经通过审核并展示后显示该项“已发布”；两者均通过时任务才显示“全部已发布”。
+11. 若官方自动提交能力不可用，系统明确展示降级流程并输出可人工上传的图片、视频及完整元数据。
+
+## 12. 待确认与技术验证
+
+- [ ] 亚马逊卖家账号类型、品牌权限及目标 ASIN 是否具备视频上传资格。
+- [ ] 是否存在满足上传、关联 ASIN、查询处理状态需求的官方接口；若无，确认人工上传降级方案。
+- [ ] 亚马逊美国站当前视频格式、分辨率、时长、字幕和内容政策要求。
+- [ ] 自动寻找视觉参考的数据来源、授权范围、抓取稳定性和版权边界。
+- [ ] 图片生成、配音和视频合成供应商的真实耗时、费用及产品一致性表现。
+- [ ] 100 元预算是否包含卖家主动发起的所有重做次数；建议包含，并在接近上限时提醒。
+- [ ] 原始图片、中间预览和历史视频版本的具体保留周期。
+- [ ] 首批实际测试商品及其品类参数模板；系统不得因此把该品类固化为唯一支持对象。
