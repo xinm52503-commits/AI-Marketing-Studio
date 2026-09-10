@@ -79,10 +79,12 @@ V1 不做登录、支付、数据库、团队权限、真实 Amazon 发布、完
 - Subscription + Credits 适合该产品。
 - 用户愿意多一步 Brief 审批来换取事实可控。
 - 社媒展示 Demo 案例能带来冷启动线索。
+  
+## 架构图
+<img width="3840" height="2400" alt="ai-creative-agent-architecture@2x" src="https://github.com/user-attachments/assets/c69a5320-8aa2-4a0a-9be5-0b7406454808" />
 
 
-
-##后续优化目标
+##后续优化想法
 ## 1. 产品概述
 
 ### 1.1 一句话定位
